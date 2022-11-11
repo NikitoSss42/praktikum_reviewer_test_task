@@ -4,16 +4,10 @@ import datetime as dt
 class Record:
     def __init__(self, amount, comment, date=''):
         self.amount = amount
-        # Выражение лучше оформить более читаемо, в 2 строки:
-        # на первой строке значение с условием if,
-        # на второй - значение с условием else.
-        #
-        # Выражение можно сократить: внести тернарный оператор в скобки
-        # и после закрывающей скобки написать .date()
         self.date = (
-            dt.datetime.now().date() if
-            not
-            date else dt.datetime.strptime(date, '%d.%m.%Y').date())
+            dt.datetime.now() if not date
+            else dt.datetime.strptime(date, '%d.%m.%Y')
+        ).date()
         self.comment = comment
 
 
@@ -27,136 +21,76 @@ class Calculator:
 
     def get_today_stats(self):
         today_stats = 0
-        # В качестве названия переменной используется зарезервированное
-        # для названия класса слово Record.
-        # Названия функций и переменных в python пишутся в нижнем регистре
-        # с _ в качестве разделителя
-        for Record in self.records:
-            if Record.date == dt.datetime.now().date():
-                # Для более короткой записи этого выражения лучше
-                # использовать оператор +=
-                today_stats = today_stats + Record.amount
-        # Между первой строкой функции и циклом, а также между телом цикла
-        # и return лучше добавить по одной разделяющей строке, так код будет
-        # более читаем и логически разделен на части
+
+        for record in self.records:
+            if record.date == dt.datetime.now().date():
+                today_stats += record.amount
+
         return today_stats
 
     def get_week_stats(self):
         week_stats = 0
         today = dt.datetime.now().date()
+
         for record in self.records:
-            # Не соблюдены отступы.
-            #
-            # Выражение можно записать короче: if 0 <= days < 7.
-            # При этом операция нахождения количества дней будет совершаться
-            # только 1 раз вместо 2-х
-            if (
-                (today - record.date).days < 7 and
-                (today - record.date).days >= 0
-            ):
+            if 0 <= (today - record.date).days < 7:
                 week_stats += record.amount
-        # Между объявлением переменных и циклом, а также между телом цикла
-        # и return лучше добавить по одной разделяющей строке, так код будет
-        # более читаем и логически разделен на части
+
         return week_stats
 
 
 class CaloriesCalculator(Calculator):
-    def get_calories_remained(self):  # Получает остаток калорий на сегодня
-        x = self.limit - self.get_today_stats()
-        # Для описания того, что делает функция, лучше использовать
-        # docstring.
-        #
-        # Между объявлением переменной и условием, лучше добавить
-        # по одной разделяющей строке, так код будет более читаем
-        # и логически разделен на части.
-        #
-        # Вместо x лучше задать осмысленное название переменной,
-        # отражающее для чего он создана
-        if x > 0:
-            # Использование бэкслеша для переноса.
-            return f'Сегодня можно съесть что-нибудь' \
-                   f' ещё, но с общей калорийностью не более {x} кКал'
-        else:
-            # Использование else в этом случае необязательно,
-            # т.к. если условие в if будет выполнено, то функция
-            # вернет значение и завершится.
-            #
-            # Для вызова return в данном случае скобки не требуются.
-            return('Хватит есть!')
+    def get_calories_remained(self):
+        """Получает остаток калорий на сегодня"""
+        remain = self.limit - self.get_today_stats()
+
+        if remain > 0:
+            return (
+                f'Сегодня можно съесть что-нибудь'
+                f' ещё, но с общей калорийностью не более {remain} кКал'
+            )
+        return 'Хватит есть!'
 
 
 class CashCalculator(Calculator):
-    USD_RATE = float(60)  # Курс доллар США.
-    EURO_RATE = float(70)  # Курс Евро.
-    # Приведение к типу float излишне, проще сразу вписать число типа float.
-    # К тому же, это константы, их значение лучше задавать явно.
-    # Пример: USD_RATE = 60.0
+    USD_RATE = 60.0  # Курс доллар США.
+    EURO_RATE = 70.0  # Курс Евро.
 
-    def get_today_cash_remained(self, currency,
-                                USD_RATE=USD_RATE, EURO_RATE=EURO_RATE):
-        # Передаваемые параметры USD_RATE и EURO_RATE излишни,
-        # они уже записаны как константы, следовательно, не подлежат
-        # изменению
-        currency_type = currency
+    def get_today_cash_remained(self, currency):
+        currency_type = ''
         cash_remained = self.limit - self.get_today_stats()
-        # Присваивание переменной currency_type значения currency излишне.
-        # В проверках условий можно использовать значение currency
-        # а currency_type при инициализации присвоить ""
 
-        # Между объявлением переменной и двумя блоками условий, лучше добавить
-        # по одной разделяющей строке, так код будет более читаем
-        # и логически разделен на части.
         if currency == 'usd':
-            # Для получения USD_RATE необходимо обращаться к нему через self
-            cash_remained /= USD_RATE
+            cash_remained /= self.USD_RATE
             currency_type = 'USD'
-        elif currency_type == 'eur':
-            # Для получения EURO_RATE необходимо обращаться к нему через self
-            cash_remained /= EURO_RATE
+        elif currency == 'eur':
+            cash_remained /= self.EURO_RATE
             currency_type = 'Euro'
-        elif currency_type == 'rub':
-            cash_remained == 1.00
-            # Необходимо исправить == на =,
-            # но т.к. перевод из другой валюту в рубли не требуется, изменять
-            # cash_remained в этом случае не нужно, иначе калькулятор будет
-            # работать некорректно.
+        elif currency == 'rub':
             currency_type = 'руб'
-        # Средний elif можно заменить на if, а последний elif убрать, оставив
-        # только return, т.к. else/elif не требуются, если в теле условного
-        # оператора используется return.
+
         if cash_remained > 0:
+            round_cash_remained = round(cash_remained, 2)
             return (
-                f'На сегодня осталось {round(cash_remained, 2)} '
+                f'На сегодня осталось {round_cash_remained} '
                 f'{currency_type}'
             )
-            # В f-строках лучше применять только подстановку переменных,
-            # без выполнения логических или арифметических операций и вызова
-            # каких-либо функций.
-            # Результат выполнения всех операций можно предварительно записать
-            # в переменные и затем подставить их в f-строку
-        elif cash_remained == 0:
+        if cash_remained == 0:
             return 'Денег нет, держись'
-        elif cash_remained < 0:
-            # Использование бэкслеша для переноса.
-            # Указывать индексы передаваемого для подстановки аргумента
-            # в f-строке в данном случае не обязательно, т.к. аргументы
-            # передаются в том же порядке, что и указываются в f-строке.
-            return 'Денег нет, держись:' \
-                   ' твой долг - {0:.2f} {1}'.format(-cash_remained,
-                                                     currency_type)
 
-    def get_week_stats(self):
-        # Данный метод описан в базовом классе и без определения будет
-        # доступен в классе.
-        # Метод базового класса можно переопределить его усовершенствования,
-        # но в данном случае это бесполезно, т.к. переопределенный метод
-        # вызывает метод базового класса и выполняет тот же функционал.
-        # Также нет return, поэтому метод получит результат выполнения
-        # метода базовго класса и не вернёт его в место вызова,
-        # вместо этого, по умолчанию, будет возвращено None
-        super().get_week_stats()
+        debt = -cash_remained
+        return 'Денег нет, держись:' \
+               ' твой долг - {:.2f} {}'.format(debt, currency_type)
 
 
-# Нет точки входа и/или конструкции if __name__ == "__main__".
-# Программа будет завершена, не выполнив ни одного действия
+def main():
+    cash_calculator = CashCalculator(1000)
+    cash_calculator.add_record(Record(amount=145, comment="кофе"))
+    cash_calculator.add_record(Record(amount=300, comment="Серёге за обед"))
+    cash_calculator.add_record(Record(amount=3000, comment="бар в Танин др",
+                                      date="08.11.2019"))
+    print(cash_calculator.get_today_cash_remained("rub"))
+
+
+if __name__ == "__main__":
+    main()
